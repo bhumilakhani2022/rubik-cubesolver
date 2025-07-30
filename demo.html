@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubik's Cube Solver - LLM Integration Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .learn-mode {
+            background: #222;
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        .status-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .ai-active { background: #4caf50; }
+        .ai-inactive { background: #ff6b35; }
+        .explanation-box {
+            margin: 12px 0;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+            background: #2a2a2a;
+        }
+        .stage-overview {
+            margin: 16px 0;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+            background: #333;
+        }
+        .cube-face {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+        }
+        .cube-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 24px);
+            gap: 2px;
+            margin: 5px 0;
+        }
+        .cube-square {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #333;
+        }
+        .controls {
+            margin-top: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        .btn-primary { background: #4caf50; color: white; }
+        .btn-secondary { background: #666; color: white; }
+        .btn-speech { background: #4caf50; color: white; font-size: 12px; padding: 4px 8px; }
+        .btn-stop { background: #f44336; color: white; font-size: 12px; padding: 4px 8px; }
+        .progress { font-size: 14px; color: #aaa; }
+        .demo-note {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 20px 0;
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧩 Rubik's Cube Solver with AI Integration</h1>
+        
+        <div class="demo-note">
+            <strong>Demo Mode:</strong> This HTML file demonstrates the LLM integration UI without requiring full npm installation. 
+            The actual React application provides full functionality with 3D visualization and real AI integration.
+        </div>
+
+        <div>
+            <button class="btn-primary" onclick="scrambleCube()">Scramble</button>
+            <button class="btn-secondary" onclick="resetCube()">Reset</button>
+            <button class="btn-primary" onclick="startLearnMode()">Start Learn Mode</button>
+        </div>
+
+        <div id="learnMode" class="learn-mode" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2>Learn Mode</h2>
+                <div>
+                    <span id="aiStatus" class="status-indicator ai-inactive">LLM Not Configured</span>
+                </div>
+            </div>
+
+            <div id="stageOverview" class="stage-overview">
+                <strong>Stage Overview:</strong> In this demonstration stage, we'll show how AI explanations enhance the learning experience by providing contextual, educational descriptions of each move.
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <strong>Stage:</strong> <span id="currentStage">Reverse Scramble</span> (1/1)<br>
+                <strong>Move:</strong> <span id="currentMove">R'</span> (1/5)<br>
+                
+                <div style="margin-top: 8px;">
+                    <strong>Basic Explanation:</strong> <span id="basicExplanation">Undo the scramble moves to return the cube to the solved state.</span>
+                </div>
+
+                <div class="explanation-box">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <strong>AI Explanation:</strong>
+                        <div>
+                            <button class="btn-speech" onclick="speakExplanation()">🔊 Speak</button>
+                            <button class="btn-stop" onclick="stopSpeech()">🔇 Stop</button>
+                        </div>
+                    </div>
+                    <div id="aiExplanation">
+                        Perform R' (Right face counterclockwise). This move rotates the right face 90 degrees counterclockwise, which will move the edge and corner pieces that were displaced during the scramble back toward their solved positions. Notice how this affects the adjacent faces - pieces from the Front, Up, and Back faces will cycle in the opposite direction from the original R move.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simplified Cube Visualization -->
+            <div style="margin: 20px 0;">
+                <h3>Cube State:</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                    <div class="cube-face">
+                        <div><strong>Up</strong></div>
+                        <div class="cube-grid">
+                            <div class="cube-square" style="background: #fff;"></div>
+                            <div class="cube-square" style="background: #ffd600;"></div>
+                            <div class="cube-square" style="background: #fff;"></div>
+                            <div class="cube-square" style="background: #43a047;"></div>
+                            <div class="cube-square" style="background: #fff;"></div>
+                            <div class="cube-square" style="background: #e53935;"></div>
+                            <div class="cube-square" style="background: #fff;"></div>
+                            <div class="cube-square" style="background: #fff;"></div>
+                            <div class="cube-square" style="background: #1e88e5;"></div>
+                        </div>
+                    </div>
+                    <div class="cube-face">
+                        <div><strong>Front</strong></div>
+                        <div class="cube-grid">
+                            <div class="cube-square" style="background: #43a047;"></div>
+                            <div class="cube-square" style="background: #43a047;"></div>
+                            <div class="cube-square" style="background: #ffd600;"></div>
+                            <div class="cube-square" style="background: #e53935;"></div>
+                            <div class="cube-square" style="background: #43a047;"></div>
+                            <div class="cube-square" style="background: #43a047;"></div>
+                            <div class="cube-square" style="background: #43a047;"></div>
+                            <div class="cube-square" style="background: #1e88e5;"></div>
+                            <div class="cube-square" style="background: #ff6f00;"></div>
+                        </div>
+                    </div>
+                    <div class="cube-face">
+                        <div><strong>Right</strong></div>
+                        <div class="cube-grid">
+                            <div class="cube-square" style="background: #e53935;"></div>
+                            <div class="cube-square" style="background: #e53935;"></div>
+                            <div class="cube-square" style="background: #e53935;"></div>
+                            <div class="cube-square" style="background: #e53935;"></div>
+                            <div class="cube-square" style="background: #e53935;"></div>
+                            <div class="cube-square" style="background: #e53935;"></div>
+                            <div class="cube-square" style="background: #e53935;"></div>
+                            <div class="cube-square" style="background: #e53935;"></div>
+                            <div class="cube-square" style="background: #e53935;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div>
+                    <button class="btn-secondary" onclick="previousMove()">Previous</button>
+                    <button class="btn-primary" onclick="nextMove()">Next</button>
+                </div>
+                <div class="progress">Progress: 20%</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let learnModeActive = false;
+        let currentMoveIndex = 0;
+        const moves = ["R'", "U", "F'", "D", "L"];
+        const explanations = [
+            "Rotate the Right face counterclockwise. This undoes a previous R move from the scramble, returning edge and corner pieces to their proper positions.",
+            "Rotate the Upper face clockwise. This move affects the top layer pieces and helps restore the cube's solved state by moving pieces back to their original positions.",
+            "Rotate the Front face counterclockwise. This reverses a previous F move, bringing the front face pieces back toward their solved configuration.",
+            "Rotate the Down face clockwise. This move works on the bottom layer, continuing the process of undoing the scramble sequence.",
+            "Rotate the Left face clockwise. This final move completes the reverse of the scramble sequence, returning the cube to its fully solved state."
+        ];
+
+        function scrambleCube() {
+            alert('Cube scrambled! (In the full React app, this would randomize the cube with 20 moves)');
+        }
+
+        function resetCube() {
+            alert('Cube reset to solved state!');
+        }
+
+        function startLearnMode() {
+            learnModeActive = true;
+            document.getElementById('learnMode').style.display = 'block';
+            // Simulate AI being configured
+            document.getElementById('aiStatus').textContent = 'AI Explanations Active';
+            document.getElementById('aiStatus').className = 'status-indicator ai-active';
+        }
+
+        function nextMove() {
+            if (currentMoveIndex < moves.length - 1) {
+                currentMoveIndex++;
+                updateMoveDisplay();
+            }
+        }
+
+        function previousMove() {
+            if (currentMoveIndex > 0) {
+                currentMoveIndex--;
+                updateMoveDisplay();
+            }
+        }
+
+        function updateMoveDisplay() {
+            document.getElementById('currentMove').textContent = moves[currentMoveIndex];
+            document.getElementById('aiExplanation').textContent = explanations[currentMoveIndex];
+            
+            const progress = Math.round(((currentMoveIndex + 1) / moves.length) * 100);
+            document.querySelector('.progress').textContent = `Progress: ${progress}%`;
+        }
+
+        function speakExplanation() {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(explanations[currentMoveIndex]);
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.volume = 0.8;
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('Text-to-speech not supported in this browser');
+            }
+        }
+
+        function stopSpeech() {
+            if ('speechSynthesis' in window) {
+                speechSynthesis.cancel();
+            }
+        }
+
+        // Initialize
+        updateMoveDisplay();
+    </script>
+</body>
+</html>
