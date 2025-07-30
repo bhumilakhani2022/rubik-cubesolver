@@ -1,12 +1,10 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import { ThemeProvider } from './contexts/ThemeContext';
-
 const AllTheProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <ThemeProvider>
+    <>
       {children}
-    </ThemeProvider>
+    </>
   );
 };
 

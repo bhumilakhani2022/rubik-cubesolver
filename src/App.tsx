@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // ...existing code...
-import { Cube, isCubeSolved } from './Cube';
+import { Cube } from './Cube';
 import { solveCFOP } from './cfopSolver';
 import type { Move } from './cfopSolver';
 import { CubeView, Cube3DView } from './components/CubeView';
