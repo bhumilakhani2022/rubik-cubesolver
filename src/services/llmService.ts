@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export interface MoveExplanation {
   explanation: string;
@@ -6,18 +6,15 @@ export interface MoveExplanation {
   visualCues: string[];
 }
 
-let openai: OpenAI | null = null;
+let genAI: GoogleGenerativeAI | null = null;
 
 try {
-  const apiKey = typeof process !== 'undefined' ? process.env.VITE_OPENAI_API_KEY : import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = process.env.VITE_GEMINI_API_KEY;
   if (apiKey) {
-    openai = new OpenAI({
-      apiKey: apiKey,
-      dangerouslyAllowBrowser: true,
-    });
+    genAI = new GoogleGenerativeAI(apiKey);
   }
 } catch (error) {
-  console.error("Failed to initialize OpenAI:", error);
+  console.error("Failed to initialize Gemini AI:", error);
 }
 
 class LLMServiceController {
@@ -25,7 +22,7 @@ class LLMServiceController {
   private isEnabled: boolean;
 
   private constructor() {
-    this.isEnabled = !!openai;
+    this.isEnabled = !!genAI;
   }
 
   public static getInstance(): LLMServiceController {
@@ -48,17 +45,19 @@ class LLMServiceController {
     previousMoves: string[],
     difficulty: 'beginner' | 'intermediate' | 'advanced'
   ): Promise<MoveExplanation> {
-    if (!this.isEnabled || !openai) {
+    if (!this.isEnabled || !genAI) {
       return {
-        explanation: 'LLM service not configured. Please add your OpenAI API key to the .env file.',
+        explanation: 'LLM service not configured. Please add your Gemini API key to the .env file.',
         tips: [],
         visualCues: [],
       };
     }
 
-    const systemPrompt = `You are an expert Rubik's Cube tutor. Your goal is to provide clear, concise, and helpful explanations for each move in a solution. The user is currently at the "${stage}" stage. The explanation should be tailored for a ${difficulty} audience.`;
+    const model = genAI.getGenerativeModel({ model: "gemini-pro"});
 
-    const userPrompt = `
+    const prompt = `
+      You are an expert Rubik's Cube tutor. Your goal is to provide clear, concise, and helpful explanations for each move in a solution. The user is currently at the "${stage}" stage. The explanation should be tailored for a ${difficulty} audience.
+
       Cube State: ${cubeState}
       Current Stage: ${stage}
       Move to Explain: ${move}
@@ -79,20 +78,10 @@ class LLMServiceController {
     `;
 
     try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        response_format: { type: 'json_object' },
-      });
-
-      const content = response.choices[0].message.content;
-      if (!content) {
-        throw new Error('No content in response');
-      }
-      return JSON.parse(content) as MoveExplanation;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      return JSON.parse(text) as MoveExplanation;
     } catch (error) {
       console.error('Error generating move explanation:', error);
       return {
@@ -104,25 +93,20 @@ class LLMServiceController {
   }
 
   public async generateStageOverview(stage: string, moves: string[]): Promise<string> {
-    if (!this.isEnabled || !openai) {
+    if (!this.isEnabled || !genAI) {
       return 'LLM service not configured.';
     }
 
-    const systemPrompt = 'You are a Rubik\'s Cube expert, skilled at providing high-level summaries of solving stages.';
-    const userPrompt = `
+    const model = genAI.getGenerativeModel({ model: "gemini-pro"});
+    const prompt = `
       Please provide a brief, one-sentence overview of the "${stage}" stage of solving a Rubik's Cube.
       This stage involves the following moves: ${moves.join(', ')}.
     `;
 
     try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-      });
-      return response.choices[0].message.content || 'Could not generate stage overview.';
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
     } catch (error) {
       console.error('Error generating stage overview:', error);
       return 'Could not generate stage overview.';

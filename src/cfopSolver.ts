@@ -39,15 +39,19 @@ export function solveCFOP(cube: Cube): Move[] {
 
   // Step 1: Cross
   const crossMoves = solveCross(cubeCopy);
+  crossMoves.forEach(move => cubeCopy.move(move));
   console.log('After Cross:', JSON.stringify(cubeCopy.state), crossMoves);
   // Step 2: F2L (First 2 Layers)
   const f2lMoves = solveF2L(cubeCopy);
+  f2lMoves.forEach(move => cubeCopy.move(move));
   console.log('After F2L:', JSON.stringify(cubeCopy.state), f2lMoves);
   // Step 3: OLL (Orient Last Layer)
   const ollMoves = solveOLL(cubeCopy);
+  ollMoves.forEach(move => cubeCopy.move(move));
   console.log('After OLL:', JSON.stringify(cubeCopy.state), ollMoves);
   // Step 4: PLL (Permute Last Layer)
   const pllMoves = solvePLL(cubeCopy);
+  pllMoves.forEach(move => cubeCopy.move(move));
   console.log('After PLL:', JSON.stringify(cubeCopy.state), pllMoves);
   // Final check
   if (!isCubeSolved(cubeCopy)) {
@@ -58,4 +62,3 @@ export function solveCFOP(cube: Cube): Move[] {
   // Combine all moves
   return [...crossMoves, ...f2lMoves, ...ollMoves, ...pllMoves];
 }
-
