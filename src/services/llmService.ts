@@ -9,9 +9,10 @@ export interface MoveExplanation {
 let openai: OpenAI | null = null;
 
 try {
-  if (import.meta.env.VITE_OPENAI_API_KEY) {
+  const apiKey = typeof process !== 'undefined' ? process.env.VITE_OPENAI_API_KEY : import.meta.env.VITE_OPENAI_API_KEY;
+  if (apiKey) {
     openai = new OpenAI({
-      apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+      apiKey: apiKey,
       dangerouslyAllowBrowser: true,
     });
   }
@@ -131,10 +132,12 @@ class LLMServiceController {
 
 class TextToSpeechServiceController {
   private static instance: TextToSpeechServiceController;
-  private synth: SpeechSynthesis;
+  private synth: SpeechSynthesis | null = null;
 
   private constructor() {
-    this.synth = window.speechSynthesis;
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      this.synth = window.speechSynthesis;
+    }
   }
 
   public static getInstance(): TextToSpeechServiceController {
@@ -145,11 +148,11 @@ class TextToSpeechServiceController {
   }
 
   public isSupported(): boolean {
-    return 'speechSynthesis' in window;
+    return this.synth !== null;
   }
 
   public async speak(text: string): Promise<void> {
-    if (!this.isSupported()) {
+    if (!this.isSupported() || !this.synth) {
       return;
     }
     this.stop();
@@ -158,7 +161,7 @@ class TextToSpeechServiceController {
   }
 
   public stop(): void {
-    if (this.isSupported()) {
+    if (this.isSupported() && this.synth) {
       this.synth.cancel();
     }
   }

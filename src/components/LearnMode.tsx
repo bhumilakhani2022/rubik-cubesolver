@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 import { Cube, CubeSolver } from '../Cube';
 import type { SolveStep } from '../Cube';
 import { CubeView } from './CubeView';
@@ -9,7 +9,7 @@ interface LearnModeProps {
   cube: Cube;
 }
 
-export const LearnMode: React.FC<LearnModeProps> = ({ cube }) => {
+export const LearnMode: FC<LearnModeProps> = ({ cube }) => {
   const [steps, setSteps] = useState<SolveStep[]>(() => CubeSolver.solve(cube));
   const [stepIdx, setStepIdx] = useState(0);
   const [moveIdx, setMoveIdx] = useState(0);
@@ -365,7 +365,7 @@ export const LearnMode: React.FC<LearnModeProps> = ({ cube }) => {
                       💡 Tips
                     </h5>
                     <ul style={{ margin: 0, paddingLeft: 'var(--spacing-lg)', color: 'var(--text-secondary)' }}>
-                      {llmExplanation.tips.map((tip, index) => (
+                      {llmExplanation.tips.map((tip: string, index: number) => (
                         <li key={index} style={{ marginBottom: 'var(--spacing-xs)' }}>{tip}</li>
                       ))}
                     </ul>
@@ -378,7 +378,7 @@ export const LearnMode: React.FC<LearnModeProps> = ({ cube }) => {
                       👀 Visual Cues
                     </h5>
                     <ul style={{ margin: 0, paddingLeft: 'var(--spacing-lg)', color: 'var(--text-secondary)' }}>
-                      {llmExplanation.visualCues.map((cue, index) => (
+                      {llmExplanation.visualCues.map((cue: string, index: number) => (
                         <li key={index} style={{ marginBottom: 'var(--spacing-xs)' }}>{cue}</li>
                       ))}
                     </ul>
